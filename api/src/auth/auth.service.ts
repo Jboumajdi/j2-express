@@ -36,7 +36,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * durée : process.env.JWT_EXPIRES_IN ('1h' par défaut). expiresIn est renvoyé en secondes.
  */
 export function signAccessToken(_user: AuthUser): { accessToken: string; expiresIn: number } {
-  const token = jwt.sign({ sub: _user.id.toString(), email: _user.email },process.env.JWT_SECRET!, { expiresIn: (process.env.JWT_EXPIRES_IN || '1h') as jwt.SignOptions['expiresIn'] });
+  const token = jwt.sign({ sub: _user.id.toString(), email: _user.email }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: (process.env.JWT_EXPIRES_IN ?? '1h') as jwt.SignOptions['expiresIn'] });
   return { accessToken: token, expiresIn: 3600 };
 }
 
@@ -46,5 +46,14 @@ export function signAccessToken(_user: AuthUser): { accessToken: string; expires
  * tout autre problème (signature, format) → HttpError(401, 'Invalid token').
  */
 export function verifyAccessToken(_token: string): AuthUser {
-  throw new HttpError(501, 'Not Implemented');
+  let payload: jwt.JwtPayload;
+  try {
+    payload = jwt.verify(_token, process.env.JWT_SECRET!, { algorithms: ['HS256'] }) as jwt.JwtPayload;
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      throw new HttpError(401, 'Token expired');
+    }
+    throw new HttpError(401, 'Invalid token');
+    }
+    return { id: Number(payload.sub), email: payload.email };
 }
