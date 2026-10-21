@@ -2,6 +2,7 @@
 // signer / vérifier un jeton (JWT). Le routeur et le middleware appellent ces fonctions.
 import { HttpError } from '../errors.js';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 /** Ce qu'on sait d'un utilisateur connecté, lu dans son jeton (pas dans la base). */
 export interface AuthUser {
@@ -35,7 +36,8 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * durée : process.env.JWT_EXPIRES_IN ('1h' par défaut). expiresIn est renvoyé en secondes.
  */
 export function signAccessToken(_user: AuthUser): { accessToken: string; expiresIn: number } {
-  throw new HttpError(501, 'Not Implemented');
+  const token = jwt.sign({ sub: _user.id.toString(), email: _user.email },process.env.JWT_SECRET!, { expiresIn: (process.env.JWT_EXPIRES_IN || '1h') as jwt.SignOptions['expiresIn'] });
+  return { accessToken: token, expiresIn: 3600 };
 }
 
 /**
