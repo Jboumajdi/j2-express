@@ -3,6 +3,7 @@
 // Hier au J0 : le pare-feu de Symfony (security.yaml) faisait ce travail pour vous.
 import type { RequestHandler } from 'express';
 import { HttpError } from '../errors.js';
+import { verifyAccessToken } from '../auth/auth.service.js';
 
 /**
  * TODO 4 (TD JWT, étape 3) :
@@ -12,5 +13,12 @@ import { HttpError } from '../errors.js';
  * Les 401 portent toujours l'en-tête WWW-Authenticate: Bearer : errorHandler s'en charge.
  */
 export const requireAuth: RequestHandler = (_req, _res, _next) => {
-  throw new HttpError(501, 'Not Implemented');
+  const match = /^Bearer (.+)$/i.exec(_req.headers.authorization ?? '');
+  if (!match) {
+    throw new HttpError(401, 'Unauthorized');
+  }
+  const token = match[1];
+  const user = verifyAccessToken(token);
+  _res.locals.user = user;
+  _next();
 };
